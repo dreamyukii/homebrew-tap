@@ -15,7 +15,7 @@ APPCAST = (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-CASK = ROOT / "Casks" / "prisma-access-browser.rb"
+CASK = ROOT / "Casks" / "prisma-access-browser-linux.rb"
 
 
 def download_sha256(url):

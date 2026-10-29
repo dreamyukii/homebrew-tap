@@ -1,4 +1,4 @@
-cask "prisma-access-browser" do
+cask "prisma-access-browser-linux" do
   version "151.11.6.72"
   sha256 "ba538abfe49b951a3044094700d45467a542695775b39c4fd1cb47fa9950df91"
 
