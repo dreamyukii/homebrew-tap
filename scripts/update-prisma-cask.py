@@ -4,6 +4,7 @@ import hashlib
 import re
 import urllib.request
 import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 APPCAST = (
@@ -13,6 +14,8 @@ APPCAST = (
     "&architecture=x64"
     "&channel=stable"
 )
+
+SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 
 ROOT = Path(__file__).resolve().parent.parent
 CASK = ROOT / "Casks" / "prisma-access-browser-linux.rb"
@@ -39,13 +42,29 @@ def latest_release():
 
     root = ET.fromstring(xml_data)
 
-    enclosure = root.find("./channel/item/enclosure")
+    items = root.findall("./channel/item")
+
+    if not items:
+        raise RuntimeError("No releases found in appcast")
+
+    latest_item = max(
+        items,
+        key=lambda item: parsedate_to_datetime(
+            item.findtext("pubDate", "")
+        ),
+    )
+
+    enclosure = latest_item.find("enclosure")
+
+    if enclosure is None:
+        raise RuntimeError("No enclosure found")
 
     return {
         "version": enclosure.attrib[
-            "{http://www.andymatuschak.org/xml-namespaces/sparkle}shortVersionString"
+            f"{{{SPARKLE_NS}}}shortVersionString"
         ],
         "url": enclosure.attrib["url"],
+        "pubdate": latest_item.findtext("pubDate", ""),
     }
 
 
@@ -59,6 +78,7 @@ def update_cask():
 
     print(f"Latest Version : {release['version']}")
     print(f"Latest URL     : {release['url']}")
+    print(f"Published      : {release['pubdate']}")
     print("Calculating SHA256...")
 
     sha256 = download_sha256(release["url"])
@@ -66,7 +86,6 @@ def update_cask():
     print(f"SHA256         : {sha256}")
 
     content = CASK.read_text(encoding="utf-8")
-
     original_content = content
 
     content = re.sub(
