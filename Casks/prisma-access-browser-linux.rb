@@ -1,6 +1,6 @@
 cask "prisma-access-browser-linux" do
   version "156.17.8.74"
-  sha256 "880a5da75927aefb1b17af8f0e43ff2a6fd1069b57e35ee381c456d11fe6f2dc"
+  sha256 "REPLACE_WITH_SHA256"
 
   url "https://updates.talon-sec.com/releases/Prisma%20Access%20Browser/linux_rpm/stable/x64/prisma-access-browser-stable-156-156.17.8.74-6065d61a.17.8.74-1.x86_64.rpm"
 
@@ -24,6 +24,9 @@ cask "prisma-access-browser-linux" do
   binary "#{staged_path}/prisma-extracted/opt/paloaltonetworks/pab/prisma-access-browser",
          target: "prisma-access-browser"
 
+  artifact "prisma-access-browser.desktop",
+           target: "#{Dir.home}/.local/share/applications/prisma-access-browser.desktop"
+
   preflight_steps do
     move "prisma-access-browser*.rpm",
          "prisma.rpm",
@@ -44,31 +47,19 @@ cask "prisma-access-browser-linux" do
 
     mkdir_p ".local/share/applications", base: :home
 
-    if_path_exists "prisma-extracted/usr/share/applications/prisma-access-browser.desktop" do
-      run "/bin/sed",
-          args: [
-            "-e",
-            "s|^Exec=.*|Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser %U|",
-            "{{staged_path}}/prisma-extracted/usr/share/applications/prisma-access-browser.desktop"
-          ],
-          stdout_path: "prisma-access-browser.desktop"
-
-      copy "prisma-access-browser.desktop",
-           ".local/share/applications/prisma-access-browser.desktop",
-           target_base: :home
-    end
-
-    unless_path_exists "prisma-extracted/usr/share/applications/prisma-access-browser.desktop" do
-      write_file ".local/share/applications/prisma-access-browser.desktop", <<~EOS, base: :home
-        [Desktop Entry]
-        Name=Prisma Access Browser
-        Comment=Enterprise Browser
-        Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser %U
-        Icon=prisma-access-browser
-        Type=Application
-        Categories=Network;WebBrowser;
-      EOS
-    end
+    write_file "prisma-access-browser.desktop", <<~EOS
+      [Desktop Entry]
+      Name=Prisma Access Browser
+      Comment=Enterprise Browser
+      Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser %U
+      Icon={{staged_path}}/prisma-extracted/opt/paloaltonetworks/pab/product_logo_256.png
+      Type=Application
+      Terminal=false
+      StartupNotify=true
+      StartupWMClass=PrismaAccessBrowser
+      Categories=Network;WebBrowser;
+      MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
+    EOS
   end
 
   uninstall_postflight_steps do
