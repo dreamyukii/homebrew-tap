@@ -1,6 +1,6 @@
 cask "prisma-access-browser-linux" do
   version "156.17.8.74"
-  sha256 "REPLACE_WITH_SHA256"
+  sha256 "880a5da75927aefb1b17af8f0e43ff2a6fd1069b57e35ee381c456d11fe6f2dc"
 
   url "https://updates.talon-sec.com/releases/Prisma%20Access%20Browser/linux_rpm/stable/x64/prisma-access-browser-stable-156-156.17.8.74-6065d61a.17.8.74-1.x86_64.rpm"
 
