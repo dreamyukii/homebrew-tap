@@ -24,7 +24,7 @@ cask "prisma-access-browser-linux" do
   binary "#{staged_path}/prisma-extracted/opt/paloaltonetworks/pab/prisma-access-browser",
          target: "prisma-access-browser"
 
-  artifact "prisma-extracted/usr/share/applications/prisma-access-browser.desktop",
+  artifact "prisma-access-browser.desktop",
            target: "#{Dir.home}/.local/share/applications/prisma-access-browser.desktop"
 
   preflight_steps do
@@ -43,14 +43,11 @@ cask "prisma-access-browser-linux" do
         stdin_path: "prisma.cpio",
         chdir: "prisma-extracted"
 
-    remove ["prisma.rpm", "prisma.cpio"]
-
     mkdir_p ".local/share/applications", base: :home
 
     if_path_exists "prisma-extracted/usr/share/applications/prisma-access-browser.desktop" do
       run "/bin/sed",
           args: [
-            "-i",
             "-e",
             "s|^Exec=/usr/bin/prisma-access-browser-stable %U|Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser %U|",
             "-e",
@@ -58,10 +55,16 @@ cask "prisma-access-browser-linux" do
             "-e",
             "s|^Exec=/usr/bin/prisma-access-browser-stable --incognito$|Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser --incognito|",
             "-e",
-            "s|^Icon=prisma-access-browser$|Icon={{staged_path}}/prisma-extracted/opt/paloaltonetworks/pab/product_logo_256.png|",
+            "s|^Icon=.*|Icon={{staged_path}}/prisma-extracted/opt/paloaltonetworks/pab/product_logo_256.png|",
             "{{staged_path}}/prisma-extracted/usr/share/applications/prisma-access-browser.desktop"
-          ]
+          ],
+          stdout_path: "prisma-access-browser.desktop"
     end
+
+    remove [
+      "prisma.rpm",
+      "prisma.cpio"
+    ]
   end
 
   uninstall_postflight_steps do
