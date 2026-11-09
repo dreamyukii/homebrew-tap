@@ -24,7 +24,7 @@ cask "prisma-access-browser-linux" do
   binary "#{staged_path}/prisma-extracted/opt/paloaltonetworks/pab/prisma-access-browser",
          target: "prisma-access-browser"
 
-  artifact "prisma-access-browser.desktop",
+  artifact "prisma-extracted/usr/share/applications/prisma-access-browser.desktop",
            target: "#{Dir.home}/.local/share/applications/prisma-access-browser.desktop"
 
   preflight_steps do
@@ -47,19 +47,21 @@ cask "prisma-access-browser-linux" do
 
     mkdir_p ".local/share/applications", base: :home
 
-    write_file "prisma-access-browser.desktop", <<~EOS
-      [Desktop Entry]
-      Name=Prisma Access Browser
-      Comment=Enterprise Browser
-      Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser %U
-      Icon={{staged_path}}/prisma-extracted/opt/paloaltonetworks/pab/product_logo_256.png
-      Type=Application
-      Terminal=false
-      StartupNotify=true
-      StartupWMClass=PrismaAccessBrowser
-      Categories=Network;WebBrowser;
-      MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
-    EOS
+    if_path_exists "prisma-extracted/usr/share/applications/prisma-access-browser.desktop" do
+      run "/bin/sed",
+          args: [
+            "-i",
+            "-e",
+            "s|^Exec=/usr/bin/prisma-access-browser-stable %U|Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser %U|",
+            "-e",
+            "s|^Exec=/usr/bin/prisma-access-browser-stable$|Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser|",
+            "-e",
+            "s|^Exec=/usr/bin/prisma-access-browser-stable --incognito$|Exec={{HOMEBREW_PREFIX}}/bin/prisma-access-browser --incognito|",
+            "-e",
+            "s|^Icon=prisma-access-browser$|Icon={{staged_path}}/prisma-extracted/opt/paloaltonetworks/pab/product_logo_256.png|",
+            "{{staged_path}}/prisma-extracted/usr/share/applications/prisma-access-browser.desktop"
+          ]
+    end
   end
 
   uninstall_postflight_steps do
