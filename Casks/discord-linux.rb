@@ -23,7 +23,10 @@ cask "discord-linux" do
 
   artifact "discord.desktop",
            target: "#{Dir.home}/.local/share/applications/discord.desktop"
-
+  preflight_steps do
+    run "/usr/bin/find",
+        args: ["{{staged_path}}"]
+  end
   preflight_steps do
     mkdir_p ".local/share/applications", base: :home
 
