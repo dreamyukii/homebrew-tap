@@ -22,18 +22,48 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Update Cask
+      - name: Run All Update Scripts
         run: |
-          python scripts/update-*.py
+          set -e
 
-      - name: Commit
+          echo "=========================================="
+          echo "Running Homebrew Cask Updaters"
+          echo "=========================================="
+
+          found=0
+
+          for script in scripts/update-*.py; do
+            [ -f "$script" ] || continue
+
+            found=1
+
+            echo
+            echo "=========================================="
+            echo "Running: $script"
+            echo "=========================================="
+
+            python3 "$script"
+          done
+
+          if [ "$found" -eq 0 ]; then
+            echo "No updater scripts found."
+            exit 1
+          fi
+
+      - name: Commit Changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add .
 
-          git diff --cached --quiet || \
+          if git diff --cached --quiet; then
+            echo "No changes detected."
+            exit 0
+          fi
+
           git commit -m "cask: update"
 
-      - name: Push
-        run: git push
+      - name: Push Changes
+        run: |
+          git push

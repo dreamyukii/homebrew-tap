@@ -9,19 +9,16 @@ cask "discord-linux" do
   homepage "https://discord.com/"
 
   livecheck do
-    url "https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=linux&arch=x64&format=tar.gz"
+    url "https://discord.com/api/updates/stable?platform=linux"
 
-    strategy :header_match do |headers|
-      match = headers["location"]&.match(%r{/apps/linux/([^/]+)/})
-      match[1] if match
+    strategy :json do |json|
+      json["name"]
     end
   end
 
-  depends_on arch: :x86_64
   depends_on :linux
 
-  binary "discord",
-         target: "discord"
+  binary "discord"
 
   artifact "discord.desktop",
            target: "#{Dir.home}/.local/share/applications/discord.desktop"
@@ -29,17 +26,20 @@ cask "discord-linux" do
   preflight_steps do
     mkdir_p ".local/share/applications", base: :home
 
-    run "/bin/sed",
-        args: [
-          "-e",
-          "s|^Exec=.*|Exec={{HOMEBREW_PREFIX}}/bin/discord --url -- %u|",
-          "-e",
-          "s|^Path=.*|Path={{HOMEBREW_PREFIX}}/bin|",
-          "-e",
-          "s|^Icon=.*|Icon={{staged_path}}/discord.png|",
-          "{{staged_path}}/discord.desktop"
-        ],
-        stdout_path: "discord.desktop"
+    write_file "discord.desktop", <<~EOS
+      [Desktop Entry]
+      Name=Discord
+      StartupWMClass=discord
+      Comment=All-in-one voice and text chat for gamers that's free, secure, and works on both your desktop and phone.
+      GenericName=Internet Messenger
+      Exec={{HOMEBREW_PREFIX}}/bin/discord --url -- %u
+      Icon={{staged_path}}/discord.png
+      Type=Application
+      Categories=Network;InstantMessaging;
+      MimeType=x-scheme-handler/discord;
+      StartupNotify=true
+      Terminal=false
+    EOS
   end
 
   uninstall_postflight_steps do
