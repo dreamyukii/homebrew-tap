@@ -18,7 +18,8 @@ cask "discord-linux" do
 
   depends_on :linux
 
-  binary "discord"
+  binary "Discord/Discord",
+       target: "discord"
 
   artifact "discord.desktop",
            target: "#{Dir.home}/.local/share/applications/discord.desktop"
