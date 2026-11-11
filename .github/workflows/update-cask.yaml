@@ -1,4 +1,4 @@
-name: Update Prisma Access Browser
+name: Update Homebrew Cask Package
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ jobs:
 
       - name: Update Cask
         run: |
-          python scripts/update-prisma-cask.py
+          python scripts/update-*.py
 
       - name: Commit
         run: |
@@ -33,7 +33,7 @@ jobs:
           git add .
 
           git diff --cached --quiet || \
-          git commit -m "prisma-access-browser: update"
+          git commit -m "cask: update"
 
       - name: Push
         run: git push
