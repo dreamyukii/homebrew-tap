@@ -1,26 +1,87 @@
 #!/usr/bin/env python3
 
-import importlib.util
+import hashlib
+import re
+import sys
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
+from typing import Mapping
 
 
-# The shared helpers live in update-all.py. Load that file as a module without
-# invoking its updater orchestration entry point.
-_spec = importlib.util.spec_from_file_location(
-    "update_all_helpers",
-    Path(__file__).with_name("update-all.py"),
-)
-if _spec is None or _spec.loader is None:
-    raise ImportError("Unable to load shared helpers from update-all.py")
-_helpers = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_helpers)
-download_sha256 = _helpers.download_sha256
-get_cask_path = _helpers.get_cask_path
-update_cask = _helpers.update_cask
+def get_cask_path(name: str) -> Path:
+    for parent in Path(__file__).resolve().parents:
+        casks_dir = parent / "Casks"
+        if casks_dir.is_dir():
+            path = casks_dir / name
+            if not path.is_file():
+                raise FileNotFoundError(f"Cask file not found: {path}")
+            return path
+
+    raise RuntimeError("Unable to locate repository root containing Casks directory")
+
+
+def download_sha256(url: str, timeout: int = 60) -> str:
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "Mozilla/5.0"},
+    )
+    digest = hashlib.sha256()
+
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        content_length = response.headers.get("Content-Length")
+        total_size = (
+            int(content_length)
+            if content_length and content_length.isdecimal()
+            else 0
+        )
+        downloaded = 0
+
+        while chunk := response.read(65536):
+            digest.update(chunk)
+            downloaded += len(chunk)
+
+            if total_size:
+                percent = min(downloaded * 100 // total_size, 100)
+                progress = (
+                    f"Downloading: {percent:3d}% "
+                    f"({downloaded / 1024**2:.1f}/"
+                    f"{total_size / 1024**2:.1f} MiB)"
+                )
+            else:
+                progress = (
+                    f"Downloaded: {downloaded / 1024**2:.1f} MiB"
+                )
+
+            sys.stdout.write(f"\r{progress}")
+            sys.stdout.flush()
+
+        sys.stdout.write("\n")
+
+    return digest.hexdigest()
+
+
+def update_cask(path: str | Path, release: Mapping[str, str]) -> None:
+    cask_path = Path(path)
+    text = cask_path.read_text(encoding="utf-8")
+
+    for key in ("version", "sha256", "url"):
+        value = release[key]
+        if '"' in value or "\n" in value:
+            raise ValueError(f"Invalid value for cask field {key!r}")
+
+        pattern = rf'(?m)^(\s*{key}\s+)"[^"]*"'
+        text, count = re.subn(
+            pattern,
+            lambda match: f'{match.group(1)}"{value}"',
+            text,
+            count=1,
+        )
+        if count != 1:
+            raise ValueError(f"Could not update {key!r} in {cask_path}")
+
+    cask_path.write_text(text, encoding="utf-8")
 
 APPCAST = (
     "https://releases.talon-sec.com/api/v1/appcast.xml"
@@ -29,76 +90,68 @@ APPCAST = (
     "&architecture=x64"
     "&channel=stable"
 )
-SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"
-CASK = get_cask_path("prisma-access-browser-linux.rb")
+
+SPARKLE_NS = (
+    "http://www.andymatuschak.org/xml-namespaces/sparkle"
+)
+
+CASK = get_cask_path(
+    "prisma-access-browser-linux.rb"
+)
 
 
 def latest_release():
-    print("\n" + "=" * 80)
+    print()
+    print("=" * 80)
     print("FETCHING PRISMA")
     print("=" * 80)
 
     request = urllib.request.Request(
         APPCAST,
         headers={
-            "User-Agent": "Mozilla/5.0",
-            "Accept": "application/xml,text/xml;q=0.9,*/*;q=0.8",
+            "User-Agent": "Mozilla/5.0"
         },
     )
 
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            xml_data = response.read()
-    except Exception as exc:
-        raise RuntimeError(f"Failed to fetch Prisma appcast: {exc}") from exc
+    with urllib.request.urlopen(request) as response:
+        xml_data = response.read()
 
-    try:
-        root = ET.fromstring(xml_data)
-    except ET.ParseError as exc:
-        raise RuntimeError(f"Failed to parse Prisma appcast XML: {exc}") from exc
+    root = ET.fromstring(xml_data)
 
-    items = root.findall("./channel/item") or root.findall(".//item")
-    if not items:
-        raise ValueError("No appcast items found in Prisma XML response")
+    items = root.findall("./channel/item")
 
-    def published_at(item):
-        raw = item.findtext("pubDate", "").strip()
-        if not raw:
-            return datetime.min.replace(tzinfo=timezone.utc)
-        try:
-            date = parsedate_to_datetime(raw)
-        except (TypeError, ValueError, IndexError):
-            return datetime.min.replace(tzinfo=timezone.utc)
-        if date.tzinfo is None:
-            date = date.replace(tzinfo=timezone.utc)
-        return date
+    latest_item = max(
+        items,
+        key=lambda item:
+        parsedate_to_datetime(
+            item.findtext("pubDate", "")
+        ),
+    )
 
-    latest_item = max(items, key=published_at)
-    enclosure = latest_item.find("enclosure")
-    if enclosure is None:
-        raise ValueError("Latest Prisma appcast item has no enclosure")
+    enclosure = latest_item.find(
+        "enclosure"
+    )
 
-    version = (
-        enclosure.attrib.get(f"{{{SPARKLE_NS}}}shortVersionString")
-        or enclosure.attrib.get("shortVersionString")
-        or latest_item.findtext(f"{{{SPARKLE_NS}}}shortVersionString", "")
-        or latest_item.findtext("version", "")
-    ).strip()
-    url = enclosure.attrib.get("url", "").strip()
-    if not version or not url:
-        raise ValueError(
-            f"Prisma appcast enclosure is missing version or URL: {enclosure.attrib!r}"
-        )
+    version = enclosure.attrib[
+        f"{{{SPARKLE_NS}}}shortVersionString"
+    ]
+
+    url = enclosure.attrib["url"]
 
     sha256 = download_sha256(url)
-    print(f"Latest Version : {version}")
-    print(f"Latest URL     : {url}")
-    print(f"SHA256         : {sha256}")
-    return {"version": version, "url": url, "sha256": sha256}
+
+    return {
+        "version": version,
+        "url": url,
+        "sha256": sha256,
+    }
 
 
 def main():
-    update_cask(CASK, latest_release())
+    update_cask(
+        CASK,
+        latest_release(),
+    )
 
 
 if __name__ == "__main__":
