@@ -32,7 +32,7 @@ jobs:
 
           found=0
 
-          for script in scripts/update-*.py; do
+          for script in .github/workflows/scripts/update-*.py; do
             [ -f "$script" ] || continue
 
             found=1
