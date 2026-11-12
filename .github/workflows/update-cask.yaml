@@ -14,7 +14,7 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v7
 
       - name: Setup Python
@@ -22,33 +22,31 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Run All Update Scripts
+      - name: Show Repository Structure
         run: |
-          set -e
-
           echo "=========================================="
-          echo "Running Homebrew Cask Updaters"
+          echo "Repository Structure"
           echo "=========================================="
 
-          found=0
+          pwd
+          echo
 
-          for script in .github/workflows/scripts/update-*.py; do
-            [ -f "$script" ] || continue
+          ls -lah
+          echo
 
-            found=1
+          find .github/workflows/scripts -maxdepth 1 -type f | sort
 
-            echo
-            echo "=========================================="
-            echo "Running: $script"
-            echo "=========================================="
+      - name: Run All Updaters
+        run: |
+          python3 .github/workflows/scripts/update-all.py
 
-            python3 "$script"
-          done
+      - name: Show Git Changes
+        run: |
+          echo "=========================================="
+          echo "Git Diff"
+          echo "=========================================="
 
-          if [ "$found" -eq 0 ]; then
-            echo "No updater scripts found."
-            exit 1
-          fi
+          git diff || true
 
       - name: Commit Changes
         run: |
