@@ -30,8 +30,6 @@ cask "discord-linux" do
 
   artifact "discord.desktop",
            target: "#{Dir.home}/.local/share/applications/discord.desktop"
-  artifact "#{staged_path}/discord-extracted/usr/share/icons/hicolor/256x256/apps/discord.png",
-           target: "#{Dir.home}/.local/share/icons/discord.png"
 
   preflight_steps do
     move "Discord.rpm",
@@ -49,7 +47,6 @@ cask "discord-linux" do
         chdir: "discord-extracted"
 
     mkdir_p ".local/share/applications", base: :home
-    mkdir_p ".local/share/icons", base: :home
 
     run "/bin/sed",
         args: [
@@ -64,6 +61,8 @@ cask "discord-linux" do
 
     run "/bin/sed",
         args: [
+          "-e",
+          "s|^Icon=.*|Icon={{staged_path}}/discord-extracted/usr/share/icons/hicolor/256x256/apps/discord.png|",
           "-e",
           "s|^Exec=/usr/bin/discord --url -- %u|Exec={{HOMEBREW_PREFIX}}/bin/discord --url -- %u|",
           "-e",
@@ -80,8 +79,6 @@ cask "discord-linux" do
 
   uninstall_postflight_steps do
     remove ".local/share/applications/discord.desktop",
-           base: :home
-    remove ".local/share/icons/discord.png",
            base: :home
   end
 
