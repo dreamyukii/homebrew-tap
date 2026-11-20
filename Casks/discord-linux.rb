@@ -2,10 +2,10 @@ cask "discord-linux" do
   arch intel: "x86_64"
   os linux: "linux"
 
-  version "1.0.169"
-  sha256 "ef32125248e2a694a8683a695525a397e56d6ef3afe19c1adb401f6d4b566fad"
+  version "1.0.170"
+  sha256 "e0b3d89ccc9e07f5e1c523a7ef573096708d0ba865c354e55a3502f076b07732"
 
-  url "https://stable.dl2.discordapp.net/distro/app/stable/linux/x64/1.0.169/Discord.rpm"
+  url "https://stable.dl2.discordapp.net/distro/app/stable/linux/x64/1.0.170/Discord.rpm"
 
   name "Discord"
   desc "Voice, video and text communication platform"
