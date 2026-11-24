@@ -1,8 +1,8 @@
 cask "prisma-access-browser-linux" do
-  version "158.19.3.37"
-  sha256 "cf312b908ae0bf60e2d02ddd959613456f72b45c0c1267627d86200691e01aa5"
+  version "158.19.4.89"
+  sha256 "9711a59f881a2b380226c8a09038e4c0aea75d543502f16098e60e95c8abd2ef"
 
-  url "https://updates.talon-sec.com/releases/Prisma%20Access%20Browser/linux_rpm/stable/x64/prisma-access-browser-stable-158-158.19.3.37-2893b817.19.3.37-1.x86_64.rpm"
+  url "https://updates.talon-sec.com/releases/Prisma%20Access%20Browser/linux_rpm/stable/x64/prisma-access-browser-stable-158-158.19.4.89-305a0a23.19.4.89-1.x86_64.rpm"
 
   name "Prisma Access Browser"
   desc "Enterprise browser from Palo Alto Networks"
