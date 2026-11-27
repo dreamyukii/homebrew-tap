@@ -34,7 +34,7 @@ cask "discord-linux" do
       Comment=All-in-one voice and text chat
       GenericName=Internet Messenger
       Exec={{HOMEBREW_PREFIX}}/bin/discord --url -- %u
-      Icon={{staged_path}}/discord.png
+      Icon={{staged_path}}/Discord/discord.png
       Type=Application
       StartupNotify=true
       StartupWMClass=discord
